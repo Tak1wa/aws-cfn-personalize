@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: ---
+Parameters: 
+  TrainingDataBucket:
+    Type: String
+    Description: ARN
+  PersonalyzeRole:
+    Type: String
+    Description: ARN
+Resources: 
+  ##########################################################
+  # ステップ1：トレーニングデータをインポートする
+  ##########################################################
+  # create-dataset-group
+  HogeDatasetGroup:
+    Type: AWS::Personalize::DatasetGroup
+    Properties: 
+      Name: iwasa-hoge-dataset-group
+  
+  # create-schema
+  HogeSchema:
+    Type: AWS::Personalize::Schema
+    Properties: 
+      Name: iwasa-hoge-schema
+      Schema: |
+        {
+          "type": "record",
+          "name": "Interactions",
+          "namespace": "com.amazonaws.personalize.schema",
+          "fields": [
+              {
+                  "name": "USER_ID",
+                  "type": "string"
+              },
+              {
+                  "name": "ITEM_ID",
+                  "type": "string"
+              },
+              {
+                  "name": "TIMESTAMP",
+                  "type": "long"
+              }
+          ],
+          "version": "1.0"
+        }
+
+  # create-dataset & create-dataset-import-job
+  HogeDataSet:
+    Type: AWS::Personalize::Dataset
+    Properties: 
+      Name: iwasa-hoge-dataset
+      DatasetType: Interactions
+      SchemaArn: !Ref HogeSchema
+      DatasetGroupArn: !Ref HogeDatasetGroup
+      DatasetImportJob: 
+        JobName: iwasa-hoge-importjob
+        DataSource:
+          DataLocation: !Ref TrainingDataBucket
+        RoleArn: !Ref PersonalyzeRole
+
+  ##########################################################
+  # ステップ2：ソリューションを作成する（モデルをトレーニングする）
+  ##########################################################
+  # ソリューションの作成: create-solution
+  HogeSolution:
+    Type: AWS::Personalize::Solution
+    Properties: 
+      Name: iwasa-hoge-solution
+      DatasetGroupArn: !Ref HogeDatasetGroup
+      RecipeArn: arn:aws:personalize:::recipe/aws-user-personalization
+
+  # create-solution-version
+  # CloudFormationに対応していない
+
+  ##########################################################
+  # ステップ3：キャンペーンを作成する（ソリューションを展開する）
+  ##########################################################
+  # create-campaign
+
+Outputs:
+  HogeSolution:
+    Value: !Ref HogeSolution
